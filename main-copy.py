@@ -17,9 +17,10 @@ import pandas as pd
 # --- Configuration ---
 api_id = '28654273'
 api_hash = '3594edc66acff32e0887c418bb46bb65'
+bot_token = '8094367127:AAEjB-lKaTWI5kmVZ_Axe2UG56rINSezKVI'
 target_channel = '@stockode_learning'
 source_channels = ['fivepaisaofficial', 'stockexploderofficial', 'boomingbullscompany', 'stockodeofficial', 'legend_of_trading']
-client = TelegramClient('multi_forward_bot', api_id, api_hash)
+client = TelegramClient('multi_forward_bot', api_id, api_hash).start(bot_token=bot_token)
 
 replace_map = {
     '5paisa': 'Stockode',
@@ -35,6 +36,11 @@ thumbnail_path = 'thumbnail.jpg'
 thumbnail2_path = 'thumbnail2.jpg'
 thumbnail3_path = 'thumbnail3.jpg'
 
+#
+bot_token = os.getenv("BOT_TOKEN")
+if not bot_token:
+    print("Error: BOT_TOKEN environment variable is not set.")
+    exit(1)
 # helper function web
 async def handle(request):
     return web.Response(text="Bot is running")
