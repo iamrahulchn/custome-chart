@@ -9,6 +9,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from aiohttp import web
 import os
 import time as t
 import pandas as pd
@@ -33,6 +34,21 @@ banned_keywords = ['gamble', 'high risk']
 thumbnail_path = 'thumbnail.jpg'
 thumbnail2_path = 'thumbnail2.jpg'
 thumbnail3_path = 'thumbnail3.jpg'
+
+# helper function web
+async def handle(request):
+    return web.Response(text="Bot is running")
+
+async def start_web_server():
+    app = web.Application()
+    app.add_routes([web.get('/', handle)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get('PORT', 8000))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    print(f"Web server running on port {port}")
+
 
 # Use your custom TradingView shared chart URLs (must be logged in)
 nifty_chart_url = "https://www.tradingview.com/chart/RsbiikQf/?symbol=NSE%3ANIFTY"  # Replace with your NIFTY chart
@@ -191,8 +207,14 @@ async def fetch_gainers_periodically():
 
 # --- Main Runner ---
 async def main():
-    print("📢 Bot is live. Listening and posting...")
+    print("Bot is running...")
+
+    # Start the web server task
+    web_task = asyncio.create_task(start_web_server())
+
+    # Run your other bot tasks concurrently
     await asyncio.gather(
+        web_task,
         client.run_until_disconnected(),
         send_custom_messages(),
         capture_and_send_charts(),
