@@ -3,3 +3,5 @@ pandas
 selenium
 pillow
 python-dotenv
+aiohttp
+requests
