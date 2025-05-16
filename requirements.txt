@@ -4,4 +4,4 @@ selenium
 pillow
 python-dotenv
 aiohttp
-request
+requests
