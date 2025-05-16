@@ -57,8 +57,8 @@ async def start_web_server():
 
 
 # Use your custom TradingView shared chart URLs (must be logged in)
-nifty_chart_url = "https://www.tradingview.com/chart/RsbiikQf/?symbol=NSE%3ANIFTY"  # Replace with your NIFTY chart
-btc_chart_url = "https://in.tradingview.com/chart/RsbiikQf/?symbol=BINANCE%3ABTCUSDT"    # Replace with your BTC chart
+nifty_chart_url = "https://www.tradingview.com/chart/?symbol=NSE:NIFTY&interval=15"  # Replace with your NIFTY chart
+btc_chart_url = "https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT&interval=60"    # Replace with your BTC chart
 
 # --- Functions ---
 def apply_replacements(text):
@@ -68,31 +68,65 @@ def apply_replacements(text):
 
 def capture_chart(url, save_path, overlay_text):
     options = Options()
-    options.add_argument('--headless=new')
-    options.add_argument('--disable-gpu')
+    options.add_argument('--headless')
     options.add_argument('--window-size=1920,1080')
-    options.add_argument('--no-sandbox')
     driver = webdriver.Chrome(options=options)
+    driver.get(url)
+    t.sleep(10)  # wait for the chart to load
+    driver.save_screenshot(save_path)
+    driver.quit()
 
-    try:
-        driver.get(url)
-        t.sleep(12)  # Wait for TradingView to load properly
+    # Load captured screenshot
+    image = Image.open(save_path).convert("RGBA")
 
-        driver.save_screenshot(save_path)
-        image = Image.open(save_path).convert("RGBA")
-        watermark = Image.new("RGBA", image.size)
-        draw = ImageDraw.Draw(watermark)
-        font = ImageFont.truetype("arial.ttf", 32)
+    # Load watermark logo
+    watermark = Image.open("watermark.png").convert("RGBA")  # Make sure watermark.png exists
+    wm_width, wm_height = 200, 80  # Resize to desired size
+    watermark = watermark.resize((wm_width, wm_height), Image.Resampling.LANCZOS)
 
-        text_width, text_height = draw.textsize(overlay_text, font)
-        x = image.width - text_width - 20
-        y = image.height - text_height - 20
 
-        draw.text((x, y), overlay_text, font=font, fill=(255, 255, 255, 160))
-        combined = Image.alpha_composite(image, watermark)
-        combined.convert("RGB").save(save_path)
-    finally:
-        driver.quit()
+    # Reduce watermark opacity
+    alpha = watermark.split()[3]
+    alpha = alpha.point(lambda p: p * 0.3)  # 0.3 = 30% opacity
+    watermark.putalpha(alpha)
+    # Position watermark at bottom right
+    margin = 30
+    x = (image.width - wm_width - margin) // 2
+    y = (image.height - wm_height - margin) // 2
+
+    # Paste watermark with transparency
+    image.paste(watermark, (x, y), watermark)
+    image.save(save_path)
+
+# --- Chart Capture Task ---
+async def capture_and_send_charts():
+    await client.connect()
+    while True:
+        now = datetime.now()
+        # Nifty chart every 30 min between 9:10 AM to 3:35 PM
+        if now.time() >= time(9, 10) and now.time() <= time(15, 35):
+            if now.minute % 30 == 10 or now.minute == 35:
+                try:
+                    capture_chart("https://www.tradingview.com/chart/?symbol=NSE:NIFTY&interval=15", "nifty.png", "Join Now: @stockode_learning")
+                    await client.send_file(target_channel, file="nifty.png", caption="📈 NIFTY Chart Update - 15 Min Timeframe")
+                except Exception as e:
+                    print(f"Error sending Nifty chart: {e}")
+                finally:
+                    if os.path.exists("nifty.png"):
+                        os.remove("nifty.png")
+
+        # Bitcoin chart every 1 hour (24x7)
+        if now.minute == 0:
+            try:
+                capture_chart("https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT&interval=60", "btc.png", "Join Now: @stockode_learning")
+                await client.send_file(target_channel, file="btc.png", caption="📊 Bitcoin Chart Update - 1 Hour Timeframe")
+            except Exception as e:
+                print(f"Error sending Bitcoin chart: {e}")
+            finally:
+                if os.path.exists("btc.png"):
+                    os.remove("btc.png")    
+        await asyncio.sleep(60)
+    
 
 def get_fno_gainers():
     options = Options()
@@ -157,7 +191,7 @@ async def send_custom_messages():
                         "• FIU Registered Platform\n"
                         "• 10% Brokerage Discount\n\n"
                         "अकाउंट खोलने के बाद हमारी टीम को 9005256800 पर मैसेज करें और FREE Entry पाएं हमारी PREMIUM Community में।")
-                await asyncio.sleep(300)
+                await asyncio.sleep(3600)
                 await client.send_file(target_channel, file=thumbnail2_path, caption="💬 Many of you were asking – How to grow small capital?\n"
                         "Well, check out my other channel where we’ve just started an exciting new series:\n"
                         "🪙 $100 to $1000 Challenge 🛫\n\n"
@@ -166,7 +200,7 @@ async def send_custom_messages():
                         "This is pure, real-time trading with small capital – don’t miss it!\n\n"
                         "✅\n"
                         "Join now: https://t.me/iamrahulchn")
-                await asyncio.sleep(300)
+                await asyncio.sleep(3600)
                 await client.send_file(target_channel, file=thumbnail3_path, caption="☑️ Attention Traders 🔊☑️\n\n"
                         "1. Always Follow Money Management – It protects your capital.\n"
                         "2. Divide Your Capital Wisely.\n" 
@@ -181,7 +215,7 @@ async def send_custom_messages():
                         "Regards,\nRahul preneur *(Chartered Financial Analyst)*")
             except Exception as e:
                 print(f"Custom message error: {e}")
-        await asyncio.sleep(300)
+        await asyncio.sleep(3600)
 
 async def capture_and_send_charts():
     while True:
@@ -209,7 +243,7 @@ async def fetch_gainers_periodically():
                 await client.send_message(target_channel, msg)
         except Exception as e:
             print(f"Gainers fetch error: {e}")
-        await asyncio.sleep(900)
+        await asyncio.sleep(3600)
 
 # --- Main Runner ---
 async def main():
