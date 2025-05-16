@@ -9,6 +9,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from aiohttp import web
 import os
 import time as t
 import pandas as pd
@@ -33,6 +34,21 @@ banned_keywords = ['gamble', 'high risk']
 thumbnail_path = 'thumbnail.jpg'
 thumbnail2_path = 'thumbnail2.jpg'
 thumbnail3_path = 'thumbnail3.jpg'
+
+# helper function web
+async def handle(request):
+    return web.Response(text="Bot is running")
+
+async def start_web_server():
+    app = web.Application()
+    app.add_routes([web.get('/', handle)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get('PORT', 8000))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    print(f"Web server running on port {port}")
+
 
 # Use your custom TradingView shared chart URLs (must be logged in)
 nifty_chart_url = "https://www.tradingview.com/chart/RsbiikQf/?symbol=NSE%3ANIFTY"  # Replace with your NIFTY chart
@@ -123,11 +139,40 @@ async def send_custom_messages():
         now = datetime.now().time()
         if time(8, 0) <= now <= time(23, 59) or now <= time(2, 0):
             try:
-                await client.send_file(target_channel, file=thumbnail_path, caption="Crypto के मेरे Personal Trades और Investments...")
+                await client.send_file(target_channel, file=thumbnail_path, caption="Crypto के मेरे Personal Trades और Investments, मैं शेयर करता हूं अपनी 👨🏻‍💻 PREMIUM CRYPTO COMMUNITY में!\n\n"
+                        "जुड़ने के लिए मेरे लिंक से DELTA Exchange में अकाउंट खोलें👇\n"
+                        "🔗 https://www.delta.exchange/?code=Stockode\n"
+                        "Referral Code: HEOWYV\n\n"
+                        "🔥 Features:\n"
+                        "• सिर्फ 5 मिनट में अकाउंट बनाएं\n"
+                        "• 100x तक Leverage\n"
+                        "• Instant Deposit & Withdrawal\n"
+                        "• सबसे कम Brokerage\n"
+                        "• FIU Registered Platform\n"
+                        "• 10% Brokerage Discount\n\n"
+                        "अकाउंट खोलने के बाद हमारी टीम को 9005256800 पर मैसेज करें और FREE Entry पाएं हमारी PREMIUM Community में।")
                 await asyncio.sleep(300)
-                await client.send_file(target_channel, file=thumbnail2_path, caption="💬 Many of you were asking – How to grow small capital?...")
+                await client.send_file(target_channel, file=thumbnail2_path, caption="💬 Many of you were asking – How to grow small capital?\n"
+                        "Well, check out my other channel where we’ve just started an exciting new series:\n"
+                        "🪙 $100 to $1000 Challenge 🛫\n\n"
+                        "🔥\n"
+                        "We’ve already grown $100 to $200 by Day 2 only 🚀\n"
+                        "This is pure, real-time trading with small capital – don’t miss it!\n\n"
+                        "✅\n"
+                        "Join now: https://t.me/iamrahulchn")
                 await asyncio.sleep(300)
-                await client.send_file(target_channel, file=thumbnail3_path, caption="☑️ Attention Traders 🔊☑️...")
+                await client.send_file(target_channel, file=thumbnail3_path, caption="☑️ Attention Traders 🔊☑️\n\n"
+                        "1. Always Follow Money Management – It protects your capital.\n"
+                        "2. Divide Your Capital Wisely.\n" 
+                        "3. Avoid Excessive Margin –.\n"
+                        "4. Respect Your Stop Loss – It safeguards your capital from significant losses.\n"
+                        "5. Don’t Overtrade – Overtrading negatively impacts your psychology and decision-making.\n"
+                        "6. Manage Your Risk Properly – For instance, if your capital is ₹1,00,000, your risk per trade should ideally be limited to ₹2,000 (2%).\n"
+                        "- Terms & Conditions: https://stockode.com/terms\n"
+                        "- Investor Charter: https://stockode.com\n\n"
+                        "⚠️ Disclaimer: *Investments in the securities market are subject to market risks. Read all related documents carefully before investing.*\n\n"
+                        "Wishing you a successful trading journey!\n\n"
+                        "Regards,\nRahul preneur *(Chartered Financial Analyst)*")
             except Exception as e:
                 print(f"Custom message error: {e}")
         await asyncio.sleep(300)
@@ -162,13 +207,20 @@ async def fetch_gainers_periodically():
 
 # --- Main Runner ---
 async def main():
-    print("📢 Bot is live. Listening and posting...")
+    print("Bot is running...")
+
+    # Start the web server task
+    web_task = asyncio.create_task(start_web_server())
+
+    # Run your other bot tasks concurrently
     await asyncio.gather(
+        web_task,
         client.run_until_disconnected(),
         send_custom_messages(),
         capture_and_send_charts(),
         fetch_gainers_periodically()
     )
+
 
 with client:
     client.loop.run_until_complete(main())
