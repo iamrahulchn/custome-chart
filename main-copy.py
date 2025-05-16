@@ -58,7 +58,7 @@ async def start_web_server():
 
 # Use your custom TradingView shared chart URLs (must be logged in)
 nifty_chart_url = "https://www.tradingview.com/chart/RsbiikQf/?symbol=NSE%3ANIFTY"  # Replace with your NIFTY chart
-btc_chart_url = "https://www.tradingview.com/chart/RsbiikQf/?symbol=NSE%3ANIFTY"    # Replace with your BTC chart
+btc_chart_url = "https://in.tradingview.com/chart/RsbiikQf/?symbol=BINANCE%3ABTCUSDT"    # Replace with your BTC chart
 
 # --- Functions ---
 def apply_replacements(text):
@@ -94,33 +94,6 @@ def capture_chart(url, save_path, overlay_text):
     finally:
         driver.quit()
 
-def get_fno_gainers():
-    options = Options()
-    options.add_argument('--headless=new')
-    options.add_argument('--disable-gpu')
-    options.add_argument('--no-sandbox')
-    driver = webdriver.Chrome(options=options)
-
-    try:
-        driver.get("https://www.nseindia.com/market-data/top-gainers-losers")
-        wait = WebDriverWait(driver, 15)
-        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "table")))
-
-        gainers_table = driver.find_element(By.XPATH, "//div[contains(@id, 'gainers')]//table")
-        rows = gainers_table.find_elements(By.TAG_NAME, "tr")[1:]
-        data = []
-        for row in rows:
-            cols = row.find_elements(By.TAG_NAME, "td")
-            if len(cols) >= 5:
-                symbol = cols[0].text.strip()
-                change_percent = cols[4].text.strip().replace('%', '')
-                data.append({'symbol': symbol, 'pChange': change_percent})
-        return pd.DataFrame(data)
-    except Exception as e:
-        print(f"Error scraping gainers: {e}")
-        return pd.DataFrame()
-    finally:
-        driver.quit()
 
 # --- Event Listener ---
 @client.on(events.NewMessage(chats=source_channels))
@@ -157,7 +130,7 @@ async def send_custom_messages():
                         "• FIU Registered Platform\n"
                         "• 10% Brokerage Discount\n\n"
                         "अकाउंट खोलने के बाद हमारी टीम को 9005256800 पर मैसेज करें और FREE Entry पाएं हमारी PREMIUM Community में।")
-                await asyncio.sleep(300)
+                await asyncio.sleep(3600)
                 await client.send_file(target_channel, file=thumbnail2_path, caption="💬 Many of you were asking – How to grow small capital?\n"
                         "Well, check out my other channel where we’ve just started an exciting new series:\n"
                         "🪙 $100 to $1000 Challenge 🛫\n\n"
@@ -166,7 +139,7 @@ async def send_custom_messages():
                         "This is pure, real-time trading with small capital – don’t miss it!\n\n"
                         "✅\n"
                         "Join now: https://t.me/iamrahulchn")
-                await asyncio.sleep(300)
+                await asyncio.sleep(3600)
                 await client.send_file(target_channel, file=thumbnail3_path, caption="☑️ Attention Traders 🔊☑️\n\n"
                         "1. Always Follow Money Management – It protects your capital.\n"
                         "2. Divide Your Capital Wisely.\n" 
@@ -181,7 +154,7 @@ async def send_custom_messages():
                         "Regards,\nRahul preneur *(Chartered Financial Analyst)*")
             except Exception as e:
                 print(f"Custom message error: {e}")
-        await asyncio.sleep(300)
+        await asyncio.sleep(3600)
 
 async def capture_and_send_charts():
     while True:
@@ -199,17 +172,6 @@ async def capture_and_send_charts():
             print(f"Chart capture error: {e}")
         await asyncio.sleep(60)
 
-async def fetch_gainers_periodically():
-    while True:
-        try:
-            gainers = get_fno_gainers()
-            if not gainers.empty:
-                msg = "🔥 Today's Top F&O Gainers:\n\n" + '\n'.join(
-                    f"{row['symbol']}: {row['pChange']}%" for _, row in gainers.iterrows())
-                await client.send_message(target_channel, msg)
-        except Exception as e:
-            print(f"Gainers fetch error: {e}")
-        await asyncio.sleep(900)
 
 # --- Main Runner ---
 async def main():
@@ -223,8 +185,8 @@ async def main():
         web_task,
         client.run_until_disconnected(),
         send_custom_messages(),
-        capture_and_send_charts(),
-        fetch_gainers_periodically()
+        capture_and_send_charts()
+       
     )
 
 
