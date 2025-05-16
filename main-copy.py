@@ -58,7 +58,7 @@ async def start_web_server():
 
 # Use your custom TradingView shared chart URLs (must be logged in)
 nifty_chart_url = "https://www.tradingview.com/chart/RsbiikQf/?symbol=NSE%3ANIFTY"  # Replace with your NIFTY chart
-btc_chart_url = "https://www.tradingview.com/chart/RsbiikQf/?symbol=NSE%3ANIFTY"    # Replace with your BTC chart
+btc_chart_url = "https://in.tradingview.com/chart/RsbiikQf/?symbol=BINANCE%3ABTCUSDT"    # Replace with your BTC chart
 
 # --- Functions ---
 def apply_replacements(text):
