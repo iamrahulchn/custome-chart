@@ -1,0 +1,5 @@
+telethon
+pandas
+selenium
+pillow
+python-dotenv
