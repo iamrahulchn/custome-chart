@@ -25,11 +25,11 @@ client = TelegramClient('multi_forward_bot', api_id, api_hash).start(bot_token=b
 replace_map = {
     '5paisa': 'Stockode',
     'Sebi registered': 'CFA',
-    'Booming Bulls Academy': 'stokcode',
+    'Booming Bulls Academy': 'stockode',
     'our team': 'Team Analyst',
     'structure.it': 'webinar.stockode.com',
     'Join now: https://t.me/realdeepwinner': 'https://webinar.stockode.com',
-    'navjotbrar': 'Rahulpreneur'
+    'Exploderop5': 'iamrahulchn'
 }
 banned_keywords = ['gamble', 'high risk']
 thumbnail_path = 'thumbnail.jpg'
@@ -94,6 +94,33 @@ def capture_chart(url, save_path, overlay_text):
     finally:
         driver.quit()
 
+def get_fno_gainers():
+    options = Options()
+    options.add_argument('--headless=new')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--no-sandbox')
+    driver = webdriver.Chrome(options=options)
+
+    try:
+        driver.get("https://www.nseindia.com/market-data/top-gainers-losers")
+        wait = WebDriverWait(driver, 15)
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "table")))
+
+        gainers_table = driver.find_element(By.XPATH, "//div[contains(@id, 'gainers')]//table")
+        rows = gainers_table.find_elements(By.TAG_NAME, "tr")[1:]
+        data = []
+        for row in rows:
+            cols = row.find_elements(By.TAG_NAME, "td")
+            if len(cols) >= 5:
+                symbol = cols[0].text.strip()
+                change_percent = cols[4].text.strip().replace('%', '')
+                data.append({'symbol': symbol, 'pChange': change_percent})
+        return pd.DataFrame(data)
+    except Exception as e:
+        print(f"Error scraping gainers: {e}")
+        return pd.DataFrame()
+    finally:
+        driver.quit()
 
 # --- Event Listener ---
 @client.on(events.NewMessage(chats=source_channels))
@@ -172,6 +199,17 @@ async def capture_and_send_charts():
             print(f"Chart capture error: {e}")
         await asyncio.sleep(60)
 
+async def fetch_gainers_periodically():
+    while True:
+        try:
+            gainers = get_fno_gainers()
+            if not gainers.empty:
+                msg = "🔥 Today's Top F&O Gainers:\n\n" + '\n'.join(
+                    f"{row['symbol']}: {row['pChange']}%" for _, row in gainers.iterrows())
+                await client.send_message(target_channel, msg)
+        except Exception as e:
+            print(f"Gainers fetch error: {e}")
+        await asyncio.sleep(900)
 
 # --- Main Runner ---
 async def main():
@@ -185,8 +223,8 @@ async def main():
         web_task,
         client.run_until_disconnected(),
         send_custom_messages(),
-        capture_and_send_charts()
-       
+        capture_and_send_charts(),
+        fetch_gainers_periodically()
     )
 
 
